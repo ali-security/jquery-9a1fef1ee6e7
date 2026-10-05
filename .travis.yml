@@ -1,3 +1,14 @@
 language: node_js
+dist: focal
 node_js:
 - '0.10'
+addons:
+  chrome: stable
+  apt:
+    packages:
+    - php-cli
+before_install:
+- npm config set registry https://:2014-05-01T18%3A05%3A32.863Z@time-machines-npm.sealsecurity.io/
+script:
+- npm test
+- bash .github/scripts/run-browser-tests.sh

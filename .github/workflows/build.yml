@@ -1,0 +1,50 @@
+name: build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '0.10'
+
+      - name: Pin npm registry to the 1.11.1 release date
+        run: npm config set registry https://:2014-05-01T18%3A05%3A32.863Z@time-machines-npm.sealsecurity.io/
+
+      - name: Toolchain versions
+        run: |
+          node -v
+          npm -v
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build (grunt default task)
+        run: ./node_modules/.bin/grunt
+
+      - name: Generate dist/cdn (as build/release.js does)
+        run: node .github/scripts/make-cdn.js
+
+      - name: Pack
+        run: |
+          # .github is not excluded by .npmignore (and npm 2 does not ignore it);
+          # .npmignore itself ships in the tarball, so drop the dir instead.
+          rm -rf .github
+          npm pack
+          ls -l jquery-1.11.1.tgz
+          tar tzvf jquery-1.11.1.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jquery-npm
+          path: jquery-1.11.1.tgz
+          if-no-files-found: error

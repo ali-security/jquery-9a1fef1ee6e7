@@ -14,6 +14,40 @@ supportjQuery.noConflict( true );
 originaljQuery = this.jQuery = undefined;
 original$ = this.$ = "replaced";
 
+// Exclude tests (by exact title) that fail only because of modern-browser behaviour.
+// Titles listed here are never registered with QUnit; a log line is emitted instead.
+(function() {
+	var excludedTests = {
+			"document ready when jQuery loaded asynchronously (#13655)":
+				"modern Chrome document.readyState timing on async script injection",
+			"Tolerating alias-masked DOM properties (#14074)":
+				"times out in modern Chrome",
+			"#14379 - jQuery.ajax() on unload":
+				"modern Chrome disallows synchronous XHR during page unload",
+			"fractions (see #7730 and #7885)":
+				"modern Chrome LayoutNG subpixel rounding (999.984375 vs 1000)"
+		},
+		hasOwn = Object.prototype.hasOwnProperty,
+		wrap = function( original ) {
+			return function( testName ) {
+				if ( hasOwn.call( excludedTests, testName ) ) {
+					if ( window.console && console.log ) {
+						console.log( "EXCLUDED: " + testName + " -- " + excludedTests[ testName ] );
+					}
+					return;
+				}
+				return original.apply( this, arguments );
+			};
+		},
+		origTest = QUnit.test,
+		origAsyncTest = QUnit.asyncTest;
+
+	// window.asyncTest/QUnit.asyncTest delegate to QUnit.test, so wrapping
+	// both entry points covers test, asyncTest, testIframe and testIframeWithCallback
+	window.test = QUnit.test = wrap( origTest );
+	window.asyncTest = QUnit.asyncTest = wrap( origAsyncTest );
+})();
+
 /**
  * Returns an array of elements with the given IDs
  * @example q("main", "foo", "bar")
